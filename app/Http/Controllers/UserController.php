@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class UserController extends Controller implements HasMiddleware
 {
@@ -17,6 +19,9 @@ class UserController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:view users', only: ['index']),
+            new Middleware('permission:create users', only: ['store']),
+            new Middleware('permission:update users', only: ['update']),
+            new Middleware('permission:delete users', only: ['destroy'])
         ];
     }
 
@@ -38,29 +43,47 @@ class UserController extends Controller implements HasMiddleware
      */
     public function store(Request $request)
     {
-        $this->validate($request, [
-            'name' => 'required',
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required',
+                'email' => 'required|email|unique:users',
+                'password' => 'required',
+                'roles' => 'sometimes|array',
+                'roles.*' => 'string|integer',
+            ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-        ]);
-        return response()->json([
-            'message' => 'User created successfully',
-            'user' => $user
-        ]);
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => bcrypt($request->password),
+            ]);
+
+            $roles = $request->input('roles', []);
+            if (!empty($roles)) {
+                $user->syncRoles($roles);
+            }
+
+            $user->load('roles');
+
+            return response()->json([
+                'message' => 'User created successfully',
+                'user' => $user
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (Throwable $e) {
+            return response()->json(['message' => 'Error', 'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'], 500);
+        }
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Request $request, string $id = null)
     {
-        $user = User::find($id);
+        $id = $id ?? $request->query('id');
+        $user = User::findOrFail($id);
+        $user->load('roles');
         return response()->json([
             'message' => 'User retrieved successfully',
             'user' => $user
@@ -72,7 +95,42 @@ class UserController extends Controller implements HasMiddleware
      */
     public function update(Request $request, string $id)
     {
-        //
+        try {
+            $validated = $request->validate([
+                'name' => 'sometimes|required',
+                'email' => 'sometimes|required|email',
+                'password' => 'sometimes|required',
+                'roles' => 'sometimes|array',
+                'roles.*' => 'string',
+            ]);
+
+            $user = User::findOrFail($id);
+
+            $data = $request->except('roles');
+            if ($request->filled('password')) {
+                $data['password'] = bcrypt($request->password);
+            } else {
+                unset($data['password']);
+            }
+
+            $user->update($data);
+
+            $roles = $request->input('roles', []);
+            if (!empty($roles)) {
+                $user->syncRoles($roles);
+            }
+
+            $user->load('roles');
+
+            return response()->json([
+                'message' => 'User updated successfully',
+                'user' => $user
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (Throwable $e) {
+            return response()->json(['message' => 'Error', 'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'], 500);
+        }
     }
 
     /**
@@ -80,6 +138,15 @@ class UserController extends Controller implements HasMiddleware
      */
     public function destroy(string $id)
     {
-        //
+        if($id == 1) {
+            return response()->json([
+                'message' => 'Cannot delete the super admin user'
+            ], 403);
+        }
+        $user = User::findOrFail($id);
+        $user->delete();
+        return response()->json([
+            'message' => 'User deleted successfully'
+        ]);
     }
 }

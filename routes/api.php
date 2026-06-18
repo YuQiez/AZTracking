@@ -8,6 +8,8 @@ use App\Http\Controllers\AuthController;
 Route::post('/login', [AuthController::class, 'login']);
 
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PermissionController;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -21,9 +23,37 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', 'index');
         Route::post('/store', 'store');
         Route::get('/{id}', 'show');
-        Route::put('/{id}/update', 'update');
+        Route::post('/{id}/update', 'update');
         Route::delete('/{id}/delete', 'destroy');
     });
+
+    // Role routes
+    Route::prefix('roles')->controller(RoleController::class)->group(function () {
+        Route::get('/', 'index');
+        Route::post('/store', 'store');
+        Route::get('/{id}', 'show');
+        Route::post('/{id}/update', 'update');
+        Route::delete('/{id}/delete', 'destroy');
+    });
+
+    // Permission routes
+    Route::prefix('permissions')->controller(PermissionController::class)->group(function () {
+        Route::get('/', 'index');
+        Route::post('/store', 'store');
+        Route::get('/{id}', 'show');
+        Route::post('/{id}/update', 'update');
+        Route::delete('/{id}/delete', 'destroy');
+    });
+
+    // Customer routes
+    Route::prefix('customers')->controller(App\Http\Controllers\CustomerController::class)->group(function () {
+        Route::get('/', 'index');
+        Route::post('/store', 'store');
+        Route::get('/{id}', 'show');
+        Route::post('/{id}/update', 'update');
+        Route::delete('/{id}/delete', 'destroy');
+});
+    
 });
 
 

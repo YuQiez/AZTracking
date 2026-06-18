@@ -11,15 +11,16 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasRoles,HasApiTokens;
+    use HasFactory, Notifiable, HasRoles, HasApiTokens, SoftDeletes;
 
-    protected string $guard_name = 'api';
+    protected string $guard_name = 'sanctum';
 
     /**
      * Get the attributes that should be cast.
@@ -31,6 +32,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'deleted_at' => 'datetime',
         ];
     }
 }

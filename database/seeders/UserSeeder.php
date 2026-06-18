@@ -23,7 +23,8 @@ class UserSeeder extends Seeder
             ]
         );
 
-        $role = Role::findByName('admin', 'api');
+        // Change 'api' to 'sanctum'
+        $role = Role::findByName('admin', 'sanctum');
         $admin->assignRole($role);
     }
 }
