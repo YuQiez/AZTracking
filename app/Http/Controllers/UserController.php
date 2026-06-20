@@ -20,7 +20,7 @@ class UserController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:view users', only: ['index']),
             new Middleware('permission:create users', only: ['store']),
-            new Middleware('permission:update users', only: ['update']),
+            new Middleware('permission:edit users', only: ['update']),
             new Middleware('permission:delete users', only: ['destroy'])
         ];
     }
@@ -81,21 +81,46 @@ class UserController extends Controller implements HasMiddleware
      */
     public function show(Request $request, string $id = null)
     {
-        $id = $id ?? $request->query('id');
-        $user = User::findOrFail($id);
-        $user->load('roles');
-        return response()->json([
-            'message' => 'User retrieved successfully',
-            'user' => $user
-        ]);
+        try {
+            $id ??= $request->query('id');
+
+            if (empty($id)) {
+                return response()->json([
+                    'message' => 'Not Found'
+                ], 400);
+            }
+
+            $user = User::findOrFail($id);
+            $user->load('roles');
+            return response()->json([
+                'message' => 'User retrieved successfully',
+                'user' => $user
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'User not found'
+            ], 404);
+        } catch (Throwable $e) {
+            return response()->json([
+                'message' => 'An error occurred while retrieving user',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $id = null)
     {
         try {
+            $id ??= $request->query('id');
+
+            if (empty($id)) {
+                return response()->json([
+                    'message' => 'Not Found'
+                ], 400);
+            }
             $validated = $request->validate([
                 'name' => 'sometimes|required',
                 'email' => 'sometimes|required|email',
@@ -128,6 +153,10 @@ class UserController extends Controller implements HasMiddleware
             ]);
         } catch (ValidationException $e) {
             return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'User not found'
+            ], 404);
         } catch (Throwable $e) {
             return response()->json(['message' => 'Error', 'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'], 500);
         }
@@ -136,17 +165,34 @@ class UserController extends Controller implements HasMiddleware
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(string $id = null)
     {
-        if($id == 1) {
+        try {
+            $id ??= request()->query('id');
+
+            if (empty($id)) {
+                return response()->json([
+                    'message' => 'Not Found'
+                ], 400);
+            }
+
+            if ($id == 1) {
+                return response()->json([
+                    'message' => 'Cannot delete the super admin user'
+                ], 403);
+            }
+
+            $user = User::findOrFail($id);
+            $user->delete();
             return response()->json([
-                'message' => 'Cannot delete the super admin user'
-            ], 403);
+                'message' => 'User deleted successfully'
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'User not found'
+            ], 404);
+        } catch (Throwable $e) {
+            return response()->json(['message' => 'Error', 'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'], 500);
         }
-        $user = User::findOrFail($id);
-        $user->delete();
-        return response()->json([
-            'message' => 'User deleted successfully'
-        ]);
     }
 }

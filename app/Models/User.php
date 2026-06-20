@@ -35,4 +35,9 @@ class User extends Authenticatable
             'deleted_at' => 'datetime',
         ];
     }
+
+   public function statuses()
+    {
+        return $this->hasMany(Status::class, 'last_updated_by');
+    }
 }

@@ -69,12 +69,25 @@ class PermissionController extends Controller implements HasMiddleware
      */
     public function show(Request $request, string $id = null)
     {
-        $id = $id ?? $request->query('id');
-        $permission = Permission::findOrFail($id);
-        return response()->json([
-            'message' => 'Permission retrieved successfully',
-            'permission' => $permission,
-        ]);
+        try {
+            $id ??= $request->query('id');
+
+            if (empty($id)) {
+                return response()->json([
+                    'message' => 'Not Found'
+                ], 400);
+            }
+
+            $permission = Permission::findOrFail($id);
+            return response()->json([
+                'message' => 'Permission retrieved successfully',
+                'permission' => $permission,
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'Permission not found'], 404);
+        } catch (Throwable $e) {
+            return response()->json(['message'=>'Error','error'=>config('app.debug') ? $e->getMessage() : 'Internal server error'], 500);
+        }
     }
 
     /**
@@ -99,6 +112,8 @@ class PermissionController extends Controller implements HasMiddleware
             ]);
         } catch (ValidationException $e) {
             return response()->json(['message'=>'Validation failed','errors'=>$e->errors()], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'Permission not found'], 404);
         } catch (Throwable $e) {
             return response()->json(['message'=>'Error','error'=>config('app.debug') ? $e->getMessage() : 'Internal server error'], 500);
         }
@@ -107,13 +122,27 @@ class PermissionController extends Controller implements HasMiddleware
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(string $id = null)
     {
-        $permission = Permission::findOrFail($id);
-        $permission->delete();
+        try {
+            $id ??= request()->query('id');
 
-        return response()->json([
-            'message' => 'Permission soft-deleted successfully',
-        ]);
+            if (empty($id)) {
+                return response()->json([
+                    'message' => 'Not Found'
+                ], 400);
+            }
+
+            $permission = Permission::findOrFail($id);
+            $permission->delete();
+
+            return response()->json([
+                'message' => 'Permission soft-deleted successfully',
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'Permission not found'], 404);
+        } catch (Throwable $e) {
+            return response()->json(['message'=>'Error','error'=>config('app.debug') ? $e->getMessage() : 'Internal server error'], 500);
+        }
     }
 }
