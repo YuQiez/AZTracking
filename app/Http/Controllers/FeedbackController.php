@@ -10,20 +10,11 @@ use Illuminate\Validation\ValidationException;
 use Throwable;
 
 
-class FeedbackController extends Controller implements HasMiddleware
+class FeedbackController extends Controller 
 {
     /**
      * Get the middleware that should be assigned to the controller.
      */
-    public static function middleware(): array
-    {
-        return [
-            new Middleware('permission:view feedbacks', only: ['index']),
-            new Middleware('permission:create feedbacks', only: ['store']),
-            new Middleware('permission:edit feedbacks', only: ['update']),
-            new Middleware('permission:delete feedbacks', only: ['destroy'])
-        ];
-    }
 
     /**
      * Display a listing of the resource.
