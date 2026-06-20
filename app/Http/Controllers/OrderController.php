@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class OrderController extends Controller implements HasMiddleware
@@ -29,7 +30,7 @@ class OrderController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        $orders = Order::with(['customer', 'status'])->get();
+        $orders = Order::with(['customer', 'statuses'])->get();
         return response()->json([
             'message' => 'Orders retrieved successfully',
             'orders' => $orders
@@ -54,10 +55,26 @@ class OrderController extends Controller implements HasMiddleware
                 'name' => 'required|string',
                 'address' => 'required|string',
                 'customer_id' => 'required|exists:customers,id',
-                'status_id' => 'required|exists:statuses,id',
+                'status_id' => 'nullable|array',
+                'status_id.*' => 'exists:statuses,id',
+                'active_status_id' => 'nullable|exists:statuses,id',
             ]);
 
-            $order = Order::create($validated);
+            $order = Order::create(collect($validated)->only(['name', 'address', 'customer_id'])->toArray());
+
+            $statusIds = $request->input('status_id', []);
+            $activeId = $request->input('active_status_id');
+
+            if (!empty($statusIds)) {
+                $sync = [];
+                foreach ($statusIds as $sid) {
+                    $sync[$sid] = ['active' => ($activeId && $activeId == $sid) ? true : false];
+                }
+                $order->statuses()->sync($sync);
+            } elseif (!empty($activeId)) {
+                // attach active status without removing existing
+                $order->statuses()->attach($activeId, ['active' => true]);
+            }
             return response()->json([
                 'message' => 'Order created successfully',
                 'order' => $order
@@ -90,11 +107,14 @@ class OrderController extends Controller implements HasMiddleware
                 ], 400);
             }
 
-            $order = Order::with(['customer', 'status'])->findOrFail($id);
+            $order = Order::with(['customer', 'statuses'])->findOrFail($id);
+
+            $active = $order->activeStatus();
 
             return response()->json([
                 'message' => 'Order retrieved successfully',
-                'order' => $order
+                'order' => $order,
+                'active_status' => $active
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(['message' => 'Order not found'], 404);
@@ -128,16 +148,41 @@ class OrderController extends Controller implements HasMiddleware
                 ], 400);
             }
 
+
             $order = Order::findOrFail($id);
 
             $validated = $request->validate([
                 'name' => 'sometimes|required|string',
                 'address' => 'sometimes|required|string',
                 'customer_id' => 'sometimes|required|exists:customers,id',
-                'status_id' => 'sometimes|required|exists:statuses,id',
+                'status_id' => 'nullable|array',
+                'status_id.*' => 'exists:statuses,id',
+                'active_status_id' => 'nullable|exists:statuses,id',
             ]);
 
-            $order->update($validated);
+            $order->update(collect($validated)->only(['name', 'address', 'customer_id'])->toArray());
+
+            $statusIds = $request->input('status_id', null);
+            $activeId = $request->input('active_status_id');
+
+            if (is_array($statusIds)) {
+                $sync = [];
+                foreach ($statusIds as $sid) {
+                    $sync[$sid] = ['active' => ($activeId && $activeId == $sid) ? true : false];
+                }
+                $order->statuses()->sync($sync);
+            }
+
+            if ($activeId) {
+                // clear existing actives
+                DB::table('order_status')->where('order_id', $order->id)->update(['active' => false]);
+                // attach or update pivot for active id
+                if ($order->statuses()->where('statuses.id', $activeId)->exists()) {
+                    $order->statuses()->updateExistingPivot($activeId, ['active' => true]);
+                } else {
+                    $order->statuses()->attach($activeId, ['active' => true]);
+                }
+            }
 
             return response()->json([
                 'message' => 'Order updated successfully',

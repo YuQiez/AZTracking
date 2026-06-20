@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Order extends Model
 {
@@ -11,7 +12,6 @@ class Order extends Model
         'name',
         'address',
         'customer_id',
-        'status_id',
     ];
 
     public function customer()
@@ -19,8 +19,24 @@ class Order extends Model
         return $this->belongsTo(Customer::class);
     }
 
-    public function status()
+    public function statuses()
     {
-        return $this->belongsTo(Status::class);
+        return $this->belongsToMany(Status::class, 'order_status')
+            ->withPivot('active')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the active status for the order.
+     * If no pivot active flag is set, return the first status ordered by `order` column.
+     */
+    public function activeStatus()
+    {
+        $active = $this->statuses()->wherePivot('active', true)->first();
+        if ($active) {
+            return $active;
+        }
+
+        return $this->statuses()->orderBy('order', 'asc')->first();
     }
 }

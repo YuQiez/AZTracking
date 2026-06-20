@@ -15,6 +15,6 @@ class OrderModelTest extends TestCase
         $this->assertEquals(['name', 'address', 'customer_id', 'status_id'], $model->getFillable());
 
         $this->assertIsObject($model->customer());
-        $this->assertIsObject($model->status());
+        $this->assertIsObject($model->statuses());
     }
 }
