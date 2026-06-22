@@ -31,7 +31,7 @@ class UserController extends Controller implements HasMiddleware
     public function index()
     {
 
-        $users = User::all();
+        $users = User::with('roles')->get();
         return response()->json([
             'message' => 'Users retrieved successfully',
             'users' => $users

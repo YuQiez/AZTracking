@@ -91,4 +91,7 @@ Route::prefix('guest')->controller(OrderController::class)->group(function () {
     Route::get('/', 'index');
 });
 
+Route::prefix('guest')->controller(FeedbackController::class)->group(function () {
+    Route::post('/store', 'store');
+});
 
