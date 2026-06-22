@@ -23,7 +23,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::post('/logout', [AuthController::class, 'logout']);
-    
+
     // User routes
     Route::prefix('users')->controller(UserController::class)->group(function () {
         Route::get('/', 'index');
@@ -58,7 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', 'show');
         Route::post('/{id}/update', 'update');
         Route::delete('/{id}/delete', 'destroy');
-});
+    });
 
     Route::prefix('statuses')->controller(StatusController::class)->group(function () {
         Route::get('/', 'index');
@@ -66,10 +66,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', 'show');
         Route::post('/{id}/update', 'update');
         Route::delete('/{id}/delete', 'destroy');
-    
-});
 
-Route::prefix('feedbacks')->controller(FeedbackController::class)->group(function () {
+    });
+
+    Route::prefix('feedbacks')->controller(FeedbackController::class)->group(function () {
         Route::get('/', 'index');
         Route::post('/store', 'store');
         Route::get('/{id}', 'show');
@@ -85,6 +85,10 @@ Route::prefix('feedbacks')->controller(FeedbackController::class)->group(functio
         Route::delete('/{id}/delete', 'destroy');
     });
 
+});
+
+Route::prefix('guest')->controller(OrderController::class)->group(function () {
+    Route::get('/', 'index');
 });
 
 
