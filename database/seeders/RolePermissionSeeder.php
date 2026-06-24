@@ -47,12 +47,12 @@ class RolePermissionSeeder extends Seeder
             'delete status',
             'view status'
         ];
-        // Change 'api' to 'sanctum'
+        // Use the api guard for permissions and roles
         foreach ($permissions as $permission) {
-            Permission::findOrCreate($permission, 'sanctum');
+            Permission::findOrCreate($permission, 'api');
         }
 
-        $adminRole = Role::findOrCreate('admin', 'sanctum');
-        $adminRole->givePermissionTo(Permission::where('guard_name', 'sanctum')->get());
+        $adminRole = Role::findOrCreate('admin', 'api');
+        $adminRole->givePermissionTo(Permission::where('guard_name', 'api')->get());
     }
 }

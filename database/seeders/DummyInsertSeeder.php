@@ -24,8 +24,8 @@ class DummyInsertSeeder extends Seeder
     {
         // Roles & Permissions
         for ($i = 1; $i <= 5; $i++) {
-            Role::firstOrCreate(['name' => "role_seed_$i", 'guard_name' => 'sanctum']);
-            Permission::firstOrCreate(['name' => "perm_seed_$i", 'guard_name' => 'sanctum']);
+            Role::firstOrCreate(['name' => "role_seed_$i", 'guard_name' => 'api']);
+            Permission::firstOrCreate(['name' => "perm_seed_$i", 'guard_name' => 'api']);
         }
 
         // Customers

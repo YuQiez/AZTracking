@@ -23,8 +23,8 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // Change 'api' to 'sanctum'
-        $role = Role::findByName('admin', 'sanctum');
+        // Use the api guard for the role assignment
+        $role = Role::findByName('admin', 'api');
         $admin->assignRole($role);
     }
 }
