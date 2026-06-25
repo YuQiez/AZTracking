@@ -144,27 +144,23 @@ class RoleController extends Controller implements HasMiddleware
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id = null)
+   
+        public function destroy(string $id = null)
     {
-        try {
-            $id ??= request()->query('id');
+        $id ??= request()->query('id');
 
-            if (empty($id)) {
-                return response()->json([
-                    'message' => 'Not Found'
-                ], 400);
-            }
-
-            $role = Role::findOrFail($id);
-            $role->delete();
-
+        if (empty($id)) {
             return response()->json([
-                'message' => 'Role deleted successfully',
-            ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(['message' => 'Role not found'], 404);
-        } catch (Throwable $e) {
-            return response()->json(['message' => 'Error', 'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'], 500);
+                'message' => 'Not Found'
+            ], 400);
         }
+
+        $role = Role::findOrFail($id);
+        $role->delete();
+
+        return response()->json([
+            'message' => 'Role deleted successfully',
+        ]);
     }
+
 }
