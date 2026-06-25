@@ -39,7 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/store', 'store');
         Route::get('/{id}', 'show');
         Route::post('/{id}/update', 'update');
-        Route::delete('/{id}/delete', 'destroy');
+        Route::delete('/{id}', 'destroy');
     });
 
     // Permission routes
